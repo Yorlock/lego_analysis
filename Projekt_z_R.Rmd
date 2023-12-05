@@ -2,29 +2,179 @@
 title: "Projekt_z_R"
 author: "Dominik Łukasiewicz"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  html_document: 
+    toc: yes
+    toc_float: true
+    number_sections: yes
+  word_document: default
+  pdf_document: default
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+# Wstęp
+Celem projektu jest analiza bazy danych Lego na przestrzeni lat.
+
+# Przygotowanie środowiska
+## Wykorzystane biblioteki
+
+```{r, message=F, echo=F, warning=F}
+
+library(knitr)
+library(dplyr)
+library(DT)
+library(skimr)
+library(plotly)
+library(ggplot2)
+library(caret)
+
+prettyTable <- function(table_df, round_digits=2) {
+    DT::datatable(table_df, style="bootstrap", filter = "top", rownames = FALSE, extensions = "Buttons", options = list(dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel', 'pdf', 'print'))) %>% formatRound(names(dplyr::select_if(table_df, is.numeric)), round_digits)
+}
+
+opts_chunk$set(echo=F, message = F, warning = F)
 ```
 
-## R Markdown
+- knitr - tworzenie raportów w R
+- dplyr - przetwarzanie danych
+- DT - wyświetlanie interaktywnych tabel
+- skimr - tworzenie podsumowania danych
+- ggplot2 - tworzenie wykresów
+- plotly - tworzenie interaktywnych wykresów
+- caret - uczenie maszynowe
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+## Ustawienie powtarzalność wyników
+W celu zapewnienia powtarzalności wyników ziarno zostało ustawione na 23.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r, echo=T}
+set.seed(23)
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+# Wstępne przetwarzanie danych
+## Wczytanie danych
+```{r, cache=T, echo=T}
+colors_raw <- read.csv("colors.csv", header = T, sep = ",")
+elements_raw <- read.csv("elements.csv", header = T, sep = ",")
+inventories_raw <- read.csv("inventories.csv", header = T, sep = ",")
+inventory_minifigs_raw <- read.csv("inventory_minifigs.csv", header = T, sep = ",")
+inventory_parts_raw <- read.csv("inventory_parts.csv", header = T, sep = ",")
+inventory_sets_raw <- read.csv("inventory_sets.csv", header = T, sep = ",")
+minifigs_raw <- read.csv("minifigs.csv", header = T, sep = ",")
+part_categories_raw <- read.csv("part_categories.csv", header = T, sep = ",")
+part_relationships_raw <- read.csv("part_relationships.csv", header = T, sep = ",")
+parts_raw <- read.csv("parts.csv", header = T, sep = ",")
+sets_raw <- read.csv("sets.csv", header = T, sep = ",")
+themes_raw <- read.csv("themes.csv", header = T, sep = ",")
 ```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Przetwarzanie brakujących danych oraz podstawowe statystyki
+### Colors
+Brak modyfikacji surowych danych
+```{r, echo=T}
+colors_clean <- colors_raw
+```
+### Elements
+Usunięcie nadmiarowej kolumny design_id, która nie miała wykorzystania w schemacie 
+```{r, echo=T}
+elements_clean <- elements_raw[, -4]
+```
+### Inventories
+Brak modyfikacji surowych danych
+```{r, echo=T}
+inventories_clean <- inventories_raw
+```
+### Inventory Minifigs
+Brak modyfikacji surowych danych
+```{r, echo=T}
+inventory_minifigs_clean <- inventory_minifigs_raw
+```
+### Inventory Parts
+Usunięcie nadmiarowej kolumny img_url, która nie podlega analizie
+```{r, echo=T}
+inventory_parts_clean <- inventory_parts_raw[, -6]
+```
+### Inventory Sets
+Brak modyfikacji surowych danych
+```{r, echo=T}
+inventory_sets_clean <- inventory_sets_raw
+```
+### Minifigs
+Usunięcie nadmiarowej kolumny img_url, która nie podlega analizie
+```{r, echo=T}
+minifigs_clean <- minifigs_raw[, -4]
+```
+### Part Categories
+Brak modyfikacji surowych danych
+```{r, echo=T}
+part_categories_clean <- part_categories_raw
+```
+### Part Relationships
+Brak modyfikacji surowych danych
+```{r, echo=T}
+part_relationships_clean <- part_relationships_raw
+```
+### Parts
+Brak modyfikacji surowych danych
+```{r, echo=T}
+parts_clean <- parts_raw
+```
+### Sets
+Usunięcie nadmiarowej kolumny img_url, która nie podlega analizie
+```{r, echo=T}
+sets_clean <- sets_raw[, -6]
+```
+### Themes
+Brak modyfikacji surowych danych
+```{r, echo=T}
+themes_clean <- themes_raw
+```
+## Analiza wartości atrybutów
+### Colors
+Istnieją kolory z różnymi nazwami, ale posiadające takie same wartości atrybutu RBG
+```{r, echo=T}
+skim(colors_clean)
+```
+### Elements
+```{r, echo=T}
+skim(elements_clean)
+```
+### Inventories
+```{r, echo=T}
+skim(inventories_clean)
+```
+### Inventory Minifigs
+```{r, echo=T}
+skim(inventory_minifigs_clean)
+```
+### Inventory Parts
+```{r, echo=T}
+skim(inventory_parts_clean)
+```
+### Inventory Sets
+```{r, echo=T}
+skim(inventory_sets_clean)
+```
+### Minifigs
+```{r, echo=T}
+skim(minifigs_clean)
+```
+### Part Categories
+```{r, echo=T}
+skim(part_categories_clean)
+```
+### Part Relationships
+```{r, echo=T}
+skim(part_relationships_clean)
+```
+### Parts
+```{r, echo=T}
+skim(parts_clean)
+```
+### Sets
+```{r, echo=T}
+skim(sets_clean)
+```
+### Themes
+- Brak parent id -> jest nadsetem
+- Ta sama nazwa np. star wars jest może być w wielu miejscach
+```{r, echo=T}
+skim(themes_clean)
+```
