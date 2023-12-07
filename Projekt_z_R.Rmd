@@ -22,6 +22,7 @@ Celem projektu jest analiza bazy danych Lego na przestrzeni lat.
 library(knitr)
 library(dplyr)
 library(DT)
+library(png)
 library(skimr)
 library(plotly)
 library(ggplot2)
@@ -37,6 +38,7 @@ opts_chunk$set(echo=F, message = F, warning = F)
 - knitr - tworzenie raportów w R
 - dplyr - przetwarzanie danych
 - DT - wyświetlanie interaktywnych tabel
+- png - wczytywanie i pokazywanie zdjęć
 - skimr - tworzenie podsumowania danych
 - ggplot2 - tworzenie wykresów
 - plotly - tworzenie interaktywnych wykresów
@@ -49,23 +51,29 @@ W celu zapewnienia powtarzalności wyników ziarno zostało ustawione na 23.
 set.seed(23)
 ```
 
+# Schemat danych
+```{r, cache=T, echo=T}
+rebrickable_schema <- readPNG("data/rebrickable_schema_v3.png")
+grid::grid.raster(rebrickable_schema)
+```
+
 # Wstępne przetwarzanie danych
 ## Wczytanie danych
 ```{r, cache=T, echo=T}
-colors_raw <- read.csv("colors.csv", header = T, sep = ",")
-elements_raw <- read.csv("elements.csv", header = T, sep = ",")
-inventories_raw <- read.csv("inventories.csv", header = T, sep = ",")
-inventory_minifigs_raw <- read.csv("inventory_minifigs.csv", header = T, sep = ",")
-inventory_parts_raw <- read.csv("inventory_parts.csv", header = T, sep = ",")
-inventory_sets_raw <- read.csv("inventory_sets.csv", header = T, sep = ",")
-minifigs_raw <- read.csv("minifigs.csv", header = T, sep = ",")
-part_categories_raw <- read.csv("part_categories.csv", header = T, sep = ",")
-part_relationships_raw <- read.csv("part_relationships.csv", header = T, sep = ",")
-parts_raw <- read.csv("parts.csv", header = T, sep = ",")
-sets_raw <- read.csv("sets.csv", header = T, sep = ",")
-themes_raw <- read.csv("themes.csv", header = T, sep = ",")
+colors_raw <- read.csv("data/colors.csv", header = T, sep = ",")
+elements_raw <- read.csv("data/elements.csv", header = T, sep = ",")
+inventories_raw <- read.csv("data/inventories.csv", header = T, sep = ",")
+inventory_minifigs_raw <- read.csv("data/inventory_minifigs.csv", header = T, sep = ",")
+inventory_parts_raw <- read.csv("data/inventory_parts.csv", header = T, sep = ",")
+inventory_sets_raw <- read.csv("data/inventory_sets.csv", header = T, sep = ",")
+minifigs_raw <- read.csv("data/minifigs.csv", header = T, sep = ",")
+part_categories_raw <- read.csv("data/part_categories.csv", header = T, sep = ",")
+part_relationships_raw <- read.csv("data/part_relationships.csv", header = T, sep = ",")
+parts_raw <- read.csv("data/parts.csv", header = T, sep = ",")
+sets_raw <- read.csv("data/sets.csv", header = T, sep = ",")
+themes_raw <- read.csv("data/themes.csv", header = T, sep = ",")
 ```
-## Przetwarzanie brakujących danych oraz podstawowe statystyki
+## Przetwarzanie brakujących danych
 ### Colors
 Brak modyfikacji surowych danych
 ```{r, echo=T}
@@ -126,55 +134,98 @@ Brak modyfikacji surowych danych
 ```{r, echo=T}
 themes_clean <- themes_raw
 ```
-## Analiza wartości atrybutów
+## Podstawowe statystyki
 ### Colors
-Istnieją kolory z różnymi nazwami, ale posiadające takie same wartości atrybutu RBG
 ```{r, echo=T}
+knitr::kable((head(colors_clean)))
 skim(colors_clean)
 ```
 ### Elements
 ```{r, echo=T}
+knitr::kable((head(elements_clean)))
 skim(elements_clean)
 ```
 ### Inventories
 ```{r, echo=T}
+knitr::kable((head(inventories_clean)))
 skim(inventories_clean)
 ```
 ### Inventory Minifigs
 ```{r, echo=T}
+knitr::kable((head(inventory_minifigs_clean)))
 skim(inventory_minifigs_clean)
 ```
 ### Inventory Parts
 ```{r, echo=T}
+knitr::kable((head(inventory_parts_clean)))
 skim(inventory_parts_clean)
 ```
 ### Inventory Sets
 ```{r, echo=T}
+knitr::kable((head(inventory_sets_clean)))
 skim(inventory_sets_clean)
 ```
 ### Minifigs
 ```{r, echo=T}
+knitr::kable((head(minifigs_clean)))
 skim(minifigs_clean)
 ```
 ### Part Categories
 ```{r, echo=T}
+knitr::kable((head(part_categories_clean)))
 skim(part_categories_clean)
 ```
 ### Part Relationships
 ```{r, echo=T}
+knitr::kable((head(part_relationships_clean)))
 skim(part_relationships_clean)
 ```
 ### Parts
 ```{r, echo=T}
+knitr::kable((head(parts_clean)))
 skim(parts_clean)
 ```
 ### Sets
 ```{r, echo=T}
+knitr::kable((head(sets_clean)))
 skim(sets_clean)
 ```
 ### Themes
-- Brak parent id -> jest nadsetem
-- Ta sama nazwa np. star wars jest może być w wielu miejscach
 ```{r, echo=T}
+knitr::kable((head(themes_clean)))
 skim(themes_clean)
+```
+# Analiza danych
+```{r, echo=F}
+elements_with_colors_df <- left_join(elements_clean, colors_clean, by = join_by(color_id == id))
+
+sum_most_used_colors_df <- data.frame(table(elements_with_colors_df$name))
+
+colnames(sum_most_used_colors_df) <- c("Color", "Quantity")
+
+sum_most_used_colors_df <- sum_most_used_colors_df %>%
+  arrange(desc(Quantity)) %>%
+  head(10)
+
+sorted_colors_with_rgb <-left_join(sum_most_used_colors_df, colors_clean, by = join_by(Color == name)) %>%
+  arrange(desc(Quantity))
+
+rgb_names_list <- sorted_colors_with_rgb %>%
+  select(rgb) %>%
+  c() %>%
+  lapply(function(x) paste0("#", x))
+
+color_names_list <- sorted_colors_with_rgb %>%
+  select(Color) %>%
+  c()
+
+rgb_color_pairs <- setNames(rgb_names_list$rgb, color_names_list$Color)
+
+ggplot(sum_most_used_colors_df, aes(x = reorder(Color, Quantity), y = Quantity, fill = Color, color = "black")) +
+  geom_bar(stat = "identity", position = "identity") +
+  labs(title = "Najczęściej używany kolor w elementach", x = "Color", y = "Quantity") +
+  scale_fill_manual(values=rgb_color_pairs) +
+  coord_flip() +
+  theme_minimal() +
+  theme(legend.position = "none")
 ```
