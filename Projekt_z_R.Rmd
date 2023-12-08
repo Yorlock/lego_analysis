@@ -26,6 +26,7 @@ library(png)
 library(skimr)
 library(plotly)
 library(ggplot2)
+library(gridExtra)
 library(caret)
 
 prettyTable <- function(table_df, round_digits=2) {
@@ -42,6 +43,7 @@ opts_chunk$set(echo=F, message = F, warning = F)
 - skimr - tworzenie podsumowania danych
 - ggplot2 - tworzenie wykresów
 - plotly - tworzenie interaktywnych wykresów
+- gridExtra - grupowanie wykresów
 - caret - uczenie maszynowe
 
 ## Ustawienie powtarzalność wyników
@@ -200,6 +202,16 @@ knitr::kable((head(themes_clean)))
 skim(themes_clean)
 ```
 # Analiza danych
+
+```{r}
+top_colors <- 10
+```
+
+## Analiza wykorzystanych kolorów w elementach
+Poniższy wykres ukazuje `r top_colors` najczęściej używanych kolorów w elementach.
+Zgodnie z uzyskanym wynikiem, najczęściej używanymi kolorami są: czarny, biały, czerwony.
+Warte również uwagi jest fakt, iż za brak koloru uważa się kolor czarny.
+
 ```{r, echo=F}
 elements_with_colors_df <- left_join(elements_clean, colors_clean, by = join_by(color_id == id))
 
@@ -209,7 +221,7 @@ colnames(sum_most_used_colors_df) <- c("Color", "Quantity")
 
 sum_most_used_colors_df <- sum_most_used_colors_df %>%
   arrange(desc(Quantity)) %>%
-  head(10)
+  head(top_colors)
 
 sorted_colors_with_rgb <-left_join(sum_most_used_colors_df, colors_clean, by = join_by(Color == name)) %>%
   arrange(desc(Quantity))
@@ -225,11 +237,64 @@ color_names_list <- sorted_colors_with_rgb %>%
 
 rgb_color_pairs <- setNames(rgb_names_list$rgb, color_names_list$Color)
 
-ggplot(sum_most_used_colors_df, aes(x = reorder(Color, Quantity), y = Quantity, fill = Color, color = "black")) +
+most_used_colors_plot <- ggplot(sum_most_used_colors_df, aes(x = reorder(Color, Quantity), y = Quantity, fill = Color, color = "black")) +
   geom_bar(stat = "identity", position = "identity") +
   labs(title = "Najczęściej używany kolor w elementach", x = "Color", y = "Quantity") +
   scale_fill_manual(values=rgb_color_pairs) +
   coord_flip() +
   theme_minimal() +
   theme(legend.position = "none")
+
+ggplotly(most_used_colors_plot, tooltip = c("Color", "Quantity"))
+
+```
+
+```{r}
+top_minifigs <- 10
+```
+## Analiza najczęściej używanych minifigach w zestawach
+Poniższe wykresy ukazuje `r top_minifigs` najczęściej używanych minifigów w zestawach.
+Pierwszy wykres agreguje dane po nazwach, natomiast drugi po unikalnych indeksach.
+Analizując uzyskane wyniki możemy dostrzeć, że wyniki różnią się.
+Wynika to z faktu, iż istnieją minifigi posiadające taką samą nazwę, ale różniącą się indeksem.
+Takie minifigi różnią się najczęściej barwą kolorów, ilością zastosowanych elementów lub materiałem z których zostały wykonane.
+```{r, echo=F}
+minifigs_with_inventory_df <- left_join(minifigs_clean, inventory_minifigs_clean, by = join_by(fig_num == fig_num))
+
+sum_most_used_minifigs_by_name_df <- minifigs_with_inventory_df %>%
+  select(fig_num, name, quantity) %>%
+  group_by(name) %>%
+  summarise(sum_of_quantity = sum(quantity)) %>%
+  arrange(desc(sum_of_quantity)) %>%
+  head(top_minifigs)
+
+colnames(sum_most_used_minifigs_by_name_df) <- c("Minifig", "Quantity")
+
+sum_most_used_minifigs_by_fig_df <- minifigs_with_inventory_df %>%
+  select(fig_num, name, quantity) %>%
+  group_by(fig_num, name) %>%
+  summarise(sum_of_quantity = sum(quantity)) %>%
+  arrange(desc(sum_of_quantity)) %>%
+  head(top_minifigs)
+
+colnames(sum_most_used_minifigs_by_fig_df) <- c("Fig_num", "Minifig", "Quantity")
+
+most_used_minifig_by_name_plot <- ggplot(sum_most_used_minifigs_by_name_df, aes(x = reorder(Minifig, Quantity), y = Quantity, fill = Minifig, color = "black")) +
+  geom_bar(stat = "identity", position = "identity") +
+  labs(title = "Najczęściej używane minifigi w \nzestawach agregując po nazwach", x = "Minifig", y = "Quantity") +
+  coord_flip() +
+  scale_fill_brewer(palette="Set3") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+most_used_minifig_by_fig_plot <- ggplot(sum_most_used_minifigs_by_fig_df, aes(x = reorder(Minifig, Quantity), y = Quantity, fill = Minifig, color = "black")) +
+  geom_bar(stat = "identity", position = "identity") +
+  labs(title = "Najczęściej używane minifigi w \nzestawach agregując po indeksach", x = "Minifig", y = "Quantity") +
+  coord_flip() +
+  scale_fill_brewer(palette="Set3") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+ggplotly(most_used_minifig_by_name_plot, tooltip = c("Minifig", "Quantity"))
+ggplotly(most_used_minifig_by_fig_plot, tooltip = c("Minifig", "Quantity"))
 ```
