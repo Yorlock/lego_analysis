@@ -51,6 +51,10 @@ W celu zapewnienia powtarzalności wyników ziarno zostało ustawione na 23.
 set.seed(23)
 ```
 
+```{r, cache=T}
+unzip("data.zip")
+```
+
 # Schemat danych
 ```{r, cache=T, echo=T}
 rebrickable_schema <- readPNG("data/rebrickable_schema_v3.png")
