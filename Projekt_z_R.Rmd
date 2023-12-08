@@ -26,7 +26,6 @@ library(png)
 library(skimr)
 library(plotly)
 library(ggplot2)
-library(gridExtra)
 library(caret)
 
 prettyTable <- function(table_df, round_digits=2) {
@@ -43,7 +42,6 @@ opts_chunk$set(echo=F, message = F, warning = F)
 - skimr - tworzenie podsumowania danych
 - ggplot2 - tworzenie wykresów
 - plotly - tworzenie interaktywnych wykresów
-- gridExtra - grupowanie wykresów
 - caret - uczenie maszynowe
 
 ## Ustawienie powtarzalność wyników
@@ -204,7 +202,7 @@ skim(themes_clean)
 # Analiza danych
 
 ```{r}
-top_colors <- 10
+top_colors <- 15
 ```
 
 ## Analiza wykorzystanych kolorów w elementach
@@ -297,4 +295,48 @@ most_used_minifig_by_fig_plot <- ggplot(sum_most_used_minifigs_by_fig_df, aes(x 
 
 ggplotly(most_used_minifig_by_name_plot, tooltip = c("Minifig", "Quantity"))
 ggplotly(most_used_minifig_by_fig_plot, tooltip = c("Minifig", "Quantity"))
+```
+
+## Liczba elementów z i bez kolorów
+```{r}
+
+
+
+```
+
+## Lista używanych materiałów do tworzenia elementów
+Tabela przedstawia jakie materiały oraz w jakiej ilości są wykorzystywane w produkowanych elementach.
+Jak widać, plastik stanowi znaczącą część wszystkich wykorzystywanych elementów, co widać wyraźnie na wykresie porównujących plastik do pozostałych materiałów.
+```{r}
+sum_of_used_materials_df <- parts_clean %>%
+  select(part_material) %>%
+  count(part_material)
+
+prettyTable(sum_of_used_materials_df)
+
+everything_but_plastic_count <- sum_of_used_materials_df %>%
+  select(part_material, n) %>%
+  filter(part_material != "Plastic") %>%
+  mutate(all_n = sum(n)) %>%
+  select(all_n) %>%
+  head(1) %>%
+  as.numeric()
+
+plastic_count <- sum_of_used_materials_df %>%
+  select(part_material, n) %>%
+  filter(part_material == "Plastic") %>%
+  select(n) %>%
+  head(1) %>%
+  as.numeric()
+
+compare_plastic_other_df <- data.frame(category = c("Other", "Plastic"), count = c(everything_but_plastic_count, plastic_count))
+
+compare_plastic_other_plot <- ggplot(compare_plastic_other_df, aes(x = category, y = count, fill = category)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Porównanie wykorzystania plastiku do reszty materiałów", x = "Category", y = "Count") +
+  theme_bw() +
+  scale_color_brewer(palette = "Paired") + 
+  theme(legend.position = "none")
+
+compare_plastic_other_plot
 ```
