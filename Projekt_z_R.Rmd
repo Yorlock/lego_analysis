@@ -207,7 +207,6 @@ top_colors <- 15
 
 ## Analiza wykorzystanych kolorów w elementach
 Poniższy wykres ukazuje `r top_colors` najczęściej używanych kolorów w elementach.
-Zgodnie z uzyskanym wynikiem, najczęściej używanymi kolorami są: czarny, biały, czerwony.
 Warte również uwagi jest fakt, iż za brak koloru uważa się kolor czarny.
 
 ```{r, echo=F}
@@ -297,11 +296,53 @@ ggplotly(most_used_minifig_by_name_plot, tooltip = c("Minifig", "Quantity"))
 ggplotly(most_used_minifig_by_fig_plot, tooltip = c("Minifig", "Quantity"))
 ```
 
+```{r}
+parts_with_categories_df <- left_join(parts_clean, part_categories_clean, by = join_by(part_cat_id == id))
+parts_with_categories_and_elements_df <- left_join(parts_with_categories_df, elements_clean, by = join_by(part_num == part_num))
+parts_full_data_df <- left_join(parts_with_categories_and_elements_df, colors_clean, by = join_by(color_id == id))
+```
+
+## Liczba części z i bez elementów
+Wykres przestawia porównanie liczbę części zawierającej element z tymi, które są bez elementów
+```{r}
+is_element_na <- is.na(parts_with_categories_and_elements_df$element_id)
+
+parts_without_elements_df <- parts_with_categories_and_elements_df[is_element_na, ] %>%
+  select(-element_id, -color_id)
+
+parts_with_elements_df <- parts_with_categories_and_elements_df[!is_element_na, ] %>%
+  select(-element_id)
+
+count_parts_with_without_elements_df <- data.frame(
+  category = c("with_elements", "without_elements"),
+  count = c(nrow(parts_with_elements_df), nrow(parts_without_elements_df)))
+
+ggplot(count_parts_with_without_elements_df, aes(x = category, y = count, fill = category)) +
+  geom_bar(stat = "identity", position = "identity") +
+  labs(title = "Liczba części z i bez elementów", x = "Category", y = "Count") +
+  theme_bw() +
+  scale_color_brewer(palette = "Paired") +
+  theme(legend.position = "none")
+```
+
 ## Liczba elementów z i bez kolorów
+Wykres przestawia porównanie liczbę elementów zawierającej jakiś kolor z tymi, które są bez koloru
 ```{r}
 
+is_color_na <- is.na(parts_full_data_df$color_id)
+parts_without_color_df = parts_full_data_df[is_color_na, ]
+parts_with_color_df = parts_full_data_df[!is_color_na, ]
 
+count_color_parts_df <- data.frame(
+  category = c("with_color", "without_color"),
+  count = c(nrow(parts_with_color_df), nrow(parts_without_color_df)))
 
+ggplot(count_color_parts_df, aes(x = category, y = count, fill = category)) +
+  geom_bar(stat = "identity", position = "identity") +
+  labs(title = "Liczba części z i bez kolorów", x = "Category", y = "Count") +
+  theme_bw() +
+  scale_color_brewer(palette = "Paired") +
+  theme(legend.position = "none")
 ```
 
 ## Lista używanych materiałów do tworzenia elementów
@@ -331,12 +372,163 @@ plastic_count <- sum_of_used_materials_df %>%
 
 compare_plastic_other_df <- data.frame(category = c("Other", "Plastic"), count = c(everything_but_plastic_count, plastic_count))
 
-compare_plastic_other_plot <- ggplot(compare_plastic_other_df, aes(x = category, y = count, fill = category)) +
-  geom_bar(stat = "identity", position = "dodge") +
+ggplot(compare_plastic_other_df, aes(x = category, y = count, fill = category)) +
+  geom_bar(stat = "identity", position = "identity") +
   labs(title = "Porównanie wykorzystania plastiku do reszty materiałów", x = "Category", y = "Count") +
   theme_bw() +
   scale_color_brewer(palette = "Paired") + 
   theme(legend.position = "none")
-
-compare_plastic_other_plot
 ```
+
+```{r}
+current_year <- as.integer(format(Sys.Date(), "%Y"))
+```
+
+## Wzrost liczby setów od początku do roku `r current_year - 1`
+Wykres przedstawia ile zostało zaprojektowanych setów w każdym roku.
+Dodatkowo zaprezentowane jest całkowita liczba zaprojektowanych setów dla każdego roku.
+```{r}
+set_without_current_year_df <- sets_clean[!(sets_clean$year %in% c(current_year, current_year + 1, current_year + 2)), ]
+
+grouped_by_year_sum_df <- set_without_current_year_df %>%
+  group_by(year) %>%
+  summarise(count_sets = n()) %>%
+  mutate(cumcount_sets = cumsum(count_sets))
+
+colnames(grouped_by_year_sum_df) <- c("Year", "Count_sets", "Cumulative_count_of_sets")
+
+grouped_by_year_plot <- ggplot(grouped_by_year_sum_df, aes(x = Year, y = Count_sets)) +
+  geom_bar(stat = "identity") +
+  geom_line(aes(y = Cumulative_count_of_sets), color = "red") +
+  labs(title = "Suma liczby setów dla każdego roku", x = "Year", y = "Sum of sets") +
+  theme_bw() +
+  scale_color_brewer(palette = "Paired")
+
+ggplotly(grouped_by_year_plot)
+```
+
+```{r}
+top_themes = 15
+```
+
+## Top `r top_themes` tematów na podstawie ilości setów
+```{r}
+themes_without_parent_df <- themes_clean %>% 
+  select(-parent_id)
+
+themes_with_parents_df <- left_join(themes_clean, themes_without_parent_df, by = join_by(parent_id == id), suffix = c("_child", "_parent")) %>%
+  select(-parent_id) %>%
+  mutate(name_parent = ifelse(is.na(name_parent), name_child, name_parent))
+
+sets_themes_df <- left_join(sets_clean, themes_with_parents_df, by = join_by(theme_id == id)) %>%
+  select(-set_num, -theme_id, -name)
+
+top_n_themes_data_df <- sets_themes_df %>%
+  group_by(name_parent) %>%
+  summarize(Count_sets = n()) %>%
+  arrange(desc(Count_sets)) %>%
+  head(top_themes)
+
+top_n_themes_plot <- ggplot(top_n_themes_data_df, aes(x=reorder(name_parent, Count_sets), y=Count_sets)) +
+  geom_bar(stat="identity", fill = "lightblue") +
+  coord_flip() +
+  labs(title = paste0("Top ", top_themes, " najpopularniejszych tematów na \npodstawie ilości setów"), x = "Theme name", y = "Sum of sets") +
+  theme_bw() +
+  theme(legend.position = "none")
+
+ggplotly(top_n_themes_plot, tooltip = c("Count_sets"))
+```
+
+```{r}
+top_themes_parents = 10
+```
+
+## Top `r top_themes_parents` tematów przewodnich
+Warto zwrócić uwagę, że jeśli temat przewodni nie miał nadrzędnego tematu, to traktowany był on jako własny nadrzędny temat 
+```{r}
+
+top_n_parent_themes_df <- themes_with_parents_df %>%
+  group_by(name_parent) %>%
+  summarize(Count = n()) %>%
+  arrange(desc(Count)) %>%
+  head(top_themes_parents)
+
+top_n_themes_plot <- ggplot(top_n_parent_themes_df, aes(x=reorder(name_parent, Count), y=Count)) +
+  geom_bar(stat="identity", fill = "blue") +
+  coord_flip() +
+  labs(title = paste0("Top ", top_themes_parents, " najpopularniejszych tematów przewodnich"), x = "Theme name", y = "Count") +
+  theme_bw() +
+  theme(legend.position = "none")
+
+ggplotly(top_n_themes_plot, tooltip = c("Count"))
+```
+
+## Suma setów oraz części dla każdego tematu
+```{r}
+sum_set_part_themes_df <- sets_themes_df %>%
+  group_by(name_parent) %>%
+  summarize(Count_sets = n(),
+            Sum_parts = sum(num_parts))
+
+colnames(sum_set_part_themes_df) <- c("Name_parent", "Count_sets", "Sum_parts")
+
+sum_set_part_themes_plot <- ggplot(sum_set_part_themes_df, aes(x = Count_sets, y= Sum_parts, color = Name_parent)) + 
+  geom_point() +
+  theme_bw()
+
+ggplotly(sum_set_part_themes_plot)
+```
+
+```{r}
+top_part_categories = 20
+```
+
+## Top `r top_part_categories` najczęśniej występowanych kategorii części
+```{r}
+top_part_with_categories_df <- left_join(parts_clean, part_categories_clean, by = join_by(part_cat_id == id), suffix = c("_parts", "_categories")) %>%
+  select(name_categories) %>%
+  group_by(name_categories) %>%
+  summarize(Count = n()) %>%
+  arrange(desc(Count)) %>%
+  head(top_part_categories)
+
+top_n_themes_plot <- ggplot(top_part_with_categories_df, aes(x=reorder(name_categories, Count), y=Count)) +
+  geom_bar(stat="identity", fill = "#4d7cc9") +
+  coord_flip() +
+  labs(x = "Category name", y = "Count") +
+  theme_bw() +
+  theme(legend.position = "none")
+
+ggplotly(top_n_themes_plot, tooltip = c("Count"))
+
+```
+
+## Porównanie najczęstszych relacji między częściami
+```{r}
+sorted_top_part_relationships_df <- part_relationships_clean %>% 
+  select(rel_type) %>%
+  group_by(rel_type) %>%
+  summarize(Count = n()) %>%
+  arrange(desc(Count))
+
+print(sorted_top_part_relationships_df)
+```
+
+## Korelacja
+```{r}
+
+```
+
+## Animacja porównujące podstawowe statystyki dla setów w przeciągu lat
+```{r}
+
+```
+
+## Korelacja między podstawowymi statystykami związanymi z setami
+```{r}
+
+```
+
+# Podumowanie najważniejszych trendów w rozwoju Lego
+
+# Przewidywanie dalszych cech zestawów Lego
