@@ -1,5 +1,5 @@
 ---
-title: "Projekt_z_R"
+title: "Analiza bazy danych Lego rebrickable"
 author: "Dominik Łukasiewicz"
 date: "`r Sys.Date()`"
 output:
@@ -12,7 +12,23 @@ output:
 ---
 
 # Wstęp
-Celem projektu jest analiza bazy danych Lego na przestrzeni lat.
+Celem projektu jest analiza bazy danych Lego na przestrzeni lat. Dane pochodzą ze strony: https://rebrickable.com/downloads/
+
+Raport został podzielony na następujące rozdziały:
+
+- Wstęp
+
+- Przygotowanie środowiska - przedstawienie bibliotek jakie zostały wykorzystane do realizacji projektu oraz ustawienie ziarna, w celu zapewnienia powtarzalności wyników
+
+- Schemat danych - przedstawienie schematu danych wykorzystanych do analizy. Warte uwagi jest fakt, iż zdjęcia schematu oraz wykorzystane dane różnią się od siebie w niewielkim stopniu
+
+- Wstępne przetwarzanie danych - pokazania sposobu wczytania danych, ich wyczyszczenia oraz ukazanie podstawowych statystyk dla każdej z tabel
+
+- Analiza danych - spojrzenie na dane pod wieloma kątami i zaprezentowanie wyników analizy w postaci tabel i wykresów
+
+- Przewidywanie dalszych cech zestawów Lego - próba przewidzenia co się stanie dalej z cechami zestawów Lego
+
+Dzięki analizy można dostrzeć, że LEGO praktycznie nieustannie rośnie od momentu powstania pierwszego zestawu. Jednym z przyczyn popularności LEGO jest projektowanie zestawów w tematyce popularnych marek takich jak: Star wars, Bionicle, Ninjago. Na początku istnienia LEGO nie wykorzystywano znanych marek, lecz ogólnikowe tematy takie jak: System, Town, Technic, City. Co ciekawe, projektowanie zestawów nie związane z znanymi markami rośnie z roku na rok, co tylko pokazuje fenomen i popularność LEGO. Według wyników z przeprowadzonych prognoz, liczba zestawów oraz części będzie ciągle rosła.
 
 # Przygotowanie środowiska
 ## Wykorzystane biblioteki
@@ -48,7 +64,7 @@ current_year <- as.integer(format(Sys.Date(), "%Y"))
 - ggplot2 - tworzenie wykresów
 - plotly - tworzenie interaktywnych wykresów
 - gganimate - animowane wykresy
-- magick - łączenie wykresów
+- magick - łączenie animowanych wykresów
 - forecast - prognoza trendów
 
 ## Ustawienie powtarzalności wyników
@@ -63,7 +79,7 @@ unzip("data.zip")
 ```
 
 # Schemat danych
-```{r, cache=T, echo=T}
+```{r, cache=T}
 rebrickable_schema <- readPNG("data/rebrickable_schema_v3.png")
 grid::grid.raster(rebrickable_schema)
 ```
@@ -147,62 +163,62 @@ themes_clean <- themes_raw
 ```
 ## Podstawowe statystyki
 ### Colors
-```{r, echo=T}
+```{r}
 knitr::kable((head(colors_clean)))
 skim(colors_clean)
 ```
 ### Elements
-```{r, echo=T}
+```{r}
 knitr::kable((head(elements_clean)))
 skim(elements_clean)
 ```
 ### Inventories
-```{r, echo=T}
+```{r}
 knitr::kable((head(inventories_clean)))
 skim(inventories_clean)
 ```
 ### Inventory Minifigs
-```{r, echo=T}
+```{r}
 knitr::kable((head(inventory_minifigs_clean)))
 skim(inventory_minifigs_clean)
 ```
 ### Inventory Parts
-```{r, echo=T}
+```{r}
 knitr::kable((head(inventory_parts_clean)))
 skim(inventory_parts_clean)
 ```
 ### Inventory Sets
-```{r, echo=T}
+```{r}
 knitr::kable((head(inventory_sets_clean)))
 skim(inventory_sets_clean)
 ```
 ### Minifigs
-```{r, echo=T}
+```{r}
 knitr::kable((head(minifigs_clean)))
 skim(minifigs_clean)
 ```
 ### Part Categories
-```{r, echo=T}
+```{r}
 knitr::kable((head(part_categories_clean)))
 skim(part_categories_clean)
 ```
 ### Part Relationships
-```{r, echo=T}
+```{r}
 knitr::kable((head(part_relationships_clean)))
 skim(part_relationships_clean)
 ```
 ### Parts
-```{r, echo=T}
+```{r}
 knitr::kable((head(parts_clean)))
 skim(parts_clean)
 ```
 ### Sets
-```{r, echo=T}
+```{r}
 knitr::kable((head(sets_clean)))
 skim(sets_clean)
 ```
 ### Themes
-```{r, echo=T}
+```{r}
 knitr::kable((head(themes_clean)))
 skim(themes_clean)
 ```
@@ -310,7 +326,7 @@ parts_full_data_df <- left_join(parts_with_categories_and_elements_df, colors_cl
 ```
 
 ## Liczba części z i bez elementów
-Wykres przestawia porównanie liczbę części zawierającej element z tymi, które są bez elementów
+Wykres przestawia porównanie liczbę części zawierających element z tymi, które są bez elementów
 ```{r}
 is_element_na <- is.na(parts_with_categories_and_elements_df$element_id)
 
@@ -423,7 +439,7 @@ grouped_by_year_statistics_df <- set_without_current_year_df %>%
 grouped_by_year_count_parts_plot <- ggplot(grouped_by_year_statistics_df, aes(x = year, y = Count_sets)) +
   geom_line(size = 1.10, color = "#875e5b") +
   scale_color_viridis_d() +
-  labs(x = "Year", y = "Count_sets") +
+  labs(x = "Year", y = "Count sets") +
   theme_classic() +
   geom_point(colour = "#875e5b", fill = "#875e5b") +
   transition_reveal(year)
@@ -431,7 +447,7 @@ grouped_by_year_count_parts_plot <- ggplot(grouped_by_year_statistics_df, aes(x 
 grouped_by_year_sum_parts_plot <- ggplot(grouped_by_year_statistics_df, aes(x = year, y = Sum_parts)) +
   geom_line(size = 1.10, color = "#db7b74") +
   scale_color_viridis_d() +
-  labs(x = "Year", y = "Sum_parts") +
+  labs(x = "Year", y = "Sum parts") +
   theme_classic() +
   geom_point(colour = "#db7b74", fill = "#db7b74") +
   transition_reveal(year)
@@ -439,7 +455,7 @@ grouped_by_year_sum_parts_plot <- ggplot(grouped_by_year_statistics_df, aes(x = 
 grouped_by_year_mean_parts_plot <- ggplot(grouped_by_year_statistics_df, aes(x = year, y = Mean_parts)) +
   geom_line(size = 1.10, color = "#d63a2f") +
   scale_color_viridis_d() +
-  labs(x = "Year", y = "Mean_parts") +
+  labs(x = "Year", y = "Mean parts") +
   theme_classic() +
   geom_point(colour = "#d63a2f", fill = "#d63a2f") +
   transition_reveal(year)
@@ -447,7 +463,7 @@ grouped_by_year_mean_parts_plot <- ggplot(grouped_by_year_statistics_df, aes(x =
 grouped_by_year_median_parts_plot <- ggplot(grouped_by_year_statistics_df, aes(x = year, y = Median_parts)) +
   geom_line(size = 1.10, color = "#7eadde") +
   scale_color_viridis_d() +
-  labs(x = "Year", y = "Median_parts") +
+  labs(x = "Year", y = "Median parts") +
   theme_classic() +
   geom_point(colour = "#7eadde", fill = "#7eadde") +
   transition_reveal(year)
@@ -455,7 +471,7 @@ grouped_by_year_median_parts_plot <- ggplot(grouped_by_year_statistics_df, aes(x
 grouped_by_year_max_parts_plot <- ggplot(grouped_by_year_statistics_df, aes(x = year, y = Max_parts)) +
   geom_line(size = 1.10, color = "#69d60f") +
   scale_color_viridis_d() +
-  labs(x = "Year", y = "Max_parts") +
+  labs(x = "Year", y = "Max parts") +
   theme_classic() +
   geom_point(colour = "#69d60f", fill = "#69d60f") +
   transition_reveal(year)
@@ -472,7 +488,7 @@ grouped_by_year_mean_parts_mgif <- image_read(grouped_by_year_mean_parts_gif)
 grouped_by_year_median_parts_gif <- animate(grouped_by_year_median_parts_plot, width = 480, height = 480)
 grouped_by_year_median_parts_mgif <- image_read(grouped_by_year_median_parts_gif)
 
-grouped_by_year_max_parts_gif <- animate(grouped_by_year_max_parts_plot, width = 480, height = 480)
+grouped_by_year_max_parts_gif <- animate(grouped_by_year_max_parts_plot, width = 400, height = 400)
 grouped_by_year_max_parts_mgif <- image_read(grouped_by_year_max_parts_gif)
 
 grouped_by_year_statistics_gif_1 <- image_append(c(grouped_by_year_count_parts_mgif[1], 
@@ -502,33 +518,52 @@ grouped_by_year_statistics_gif_3
 ```
 
 ## Korelacja między podstawowymi statystykami związanymi z setami
+
+Z przedstawionych wykresów możemy dostrzec, że mediana części jest najsłabiej skorelowana z pozostałymi wynikami. Natomiast najsilniejszą korelację widać dla sumy części i ilości setów.
+
 ```{r}
 correlation_matrix_pearson <- cor(grouped_by_year_statistics_df[, c("Count_sets", "Sum_parts", "Mean_parts", "Median_parts", "Max_parts")], method = "pearson")
 correlation_matrix_pearson_df <- as.data.frame(as.table(correlation_matrix_pearson))
 
-ggplot(correlation_matrix_pearson_df, aes(Var1, Var2, fill = Freq)) +
+correlation_matrix_pearson_plot <- ggplot(correlation_matrix_pearson_df, aes(Var1, Var2, fill = Freq,
+                                                                             text = paste0("Attribute 1: ", Var1,
+                                                                                           "\nAttribute 2: ", Var2,
+                                                                                           "\nFrequency: ", Freq))) +
   geom_tile(color = "purple") +
   scale_fill_distiller(palette = "Purples", direction = 1) +
   labs(title = "Correlation Heatmap - pearson", x = "Attribute", y = "Attribute") +
   theme_bw()
 
+ggplotly(correlation_matrix_pearson_plot, tooltip = c("text"))
+
 correlation_matrix_kendall <- cor(grouped_by_year_statistics_df[, c("Count_sets", "Sum_parts", "Mean_parts", "Median_parts", "Max_parts")], method = "kendall")
 correlation_matrix_kendall_df <- as.data.frame(as.table(correlation_matrix_kendall))
 
-ggplot(correlation_matrix_kendall_df, aes(Var1, Var2, fill = Freq)) +
+correlation_matrix_kendall_plot <- ggplot(correlation_matrix_kendall_df, aes(Var1, Var2, fill = Freq,
+                                                                             text = paste0("Attribute 1: ", Var1,
+                                                                                           "\nAttribute 2: ", Var2,
+                                                                                           "\nFrequency: ", Freq))) +
   geom_tile(color = "purple") +
   scale_fill_distiller(palette = "Purples", direction = 1) +
   labs(title = "Correlation Heatmap - kendall", x = "Attribute", y = "Attribute") +
   theme_bw()
 
+ggplotly(correlation_matrix_kendall_plot, tooltip = c("text"))
+
 correlation_matrix_spearman <- cor(grouped_by_year_statistics_df[, c("Count_sets", "Sum_parts", "Mean_parts", "Median_parts", "Max_parts")], method = "spearman")
 correlation_matrix_spearman_df <- as.data.frame(as.table(correlation_matrix_spearman))
 
-ggplot(correlation_matrix_spearman_df, aes(Var1, Var2, fill = Freq)) +
+correlation_matrix_spearman_plot <- ggplot(correlation_matrix_spearman_df, aes(Var1, Var2, fill = Freq,
+                                                                             text = paste0("Attribute 1: ", Var1,
+                                                                                           "\nAttribute 2: ", Var2,
+                                                                                           "\nFrequency: ", Freq))) +
   geom_tile(color = "purple") +
   scale_fill_distiller(palette = "Purples", direction = 1) +
   labs(title = "Correlation Heatmap - spearman", x = "Attribute", y = "Attribute") +
   theme_bw()
+
+ggplotly(correlation_matrix_spearman_plot, tooltip = c("text"))
+
 ```
 
 ```{r}
@@ -536,7 +571,7 @@ top_themes_1 = 15
 top_themes_2 = 10
 ```
 
-## Top `r top_themes_1` tematów na podstawie ilości setów
+## Top `r top_themes_1` najpopularniejszych tematów na podstawie ilości setów
 ```{r}
 themes_without_parent_df <- themes_clean %>% 
   select(-parent_id)
@@ -560,21 +595,22 @@ top_n_2_themes_data_df <- sets_themes_df %>%
   arrange(desc(Count_sets)) %>%
   head(top_themes_2)
 
-top_n_themes_plot <- ggplot(top_n_1_themes_data_df, aes(x=reorder(name_parent, Count_sets), y=Count_sets)) +
+top_n_themes_plot <- ggplot(top_n_1_themes_data_df, aes(x=reorder(name_parent, Count_sets), y=Count_sets, 
+                                                        text = paste0("Count sets: ", Count_sets))) +
   geom_bar(stat="identity", fill = "lightblue") +
   coord_flip() +
-  labs(title = paste0("Top ", top_themes_1, " najpopularniejszych tematów na \npodstawie ilości setów"), x = "Theme name", y = "Sum of sets") +
+  labs(x = "Theme name", y = "Sum of sets") +
   theme_bw() +
   theme(legend.position = "none")
 
-ggplotly(top_n_themes_plot, tooltip = c("Count_sets"))
+ggplotly(top_n_themes_plot, tooltip = c("text"))
 ```
 
 ```{r}
 top_themes_parents = 10
 ```
 
-## Top `r top_themes_parents` tematów przewodnich
+## Top `r top_themes_parents` najpopularniejszych tematów przewodnich
 Warto zwrócić uwagę, że jeśli temat przewodni nie miał nadrzędnego tematu, to traktowany był on jako własny nadrzędny temat 
 ```{r}
 
@@ -587,7 +623,7 @@ top_n_parent_themes_df <- themes_with_parents_df %>%
 top_n_themes_plot <- ggplot(top_n_parent_themes_df, aes(x=reorder(name_parent, Count), y=Count)) +
   geom_bar(stat="identity", fill = "blue") +
   coord_flip() +
-  labs(title = paste0("Top ", top_themes_parents, " najpopularniejszych tematów przewodnich"), x = "Theme name", y = "Count") +
+  labs(x = "Theme name", y = "Count") +
   theme_bw() +
   theme(legend.position = "none")
 
@@ -601,13 +637,15 @@ sum_set_part_themes_df <- sets_themes_df %>%
   summarize(Count_sets = n(),
             Sum_parts = sum(num_parts))
 
-colnames(sum_set_part_themes_df) <- c("Name_parent", "Count_sets", "Sum_parts")
-
-sum_set_part_themes_plot <- ggplot(sum_set_part_themes_df, aes(x = Count_sets, y= Sum_parts, color = Name_parent)) + 
+sum_set_part_themes_plot <- ggplot(sum_set_part_themes_df, aes(x = Count_sets, y= Sum_parts, color = name_parent, 
+                                                               text = paste0("Name parent: ", name_parent,
+                                                                             "\nCount sets: ", Count_sets,
+                                                                             "\nSum parts: ", Sum_parts))) + 
   geom_point() +
+  labs(x = "Sum parts", y = "Count sets") +
   theme_bw()
 
-ggplotly(sum_set_part_themes_plot)
+ggplotly(sum_set_part_themes_plot, tooltip = c("text"))
 ```
 
 ```{r}
@@ -739,17 +777,140 @@ ggplotly(sorted_top_part_relationships_plot, tooltip = c("Count"))
 ```
 
 # Przewidywanie dalszych cech zestawów Lego
-## Prognoza 1
 ```{r}
+sets_themes_each_year_df <- sets_themes_df %>%
+  group_by(year) %>%
+  summarise(
+    sum_parts = sum(num_parts),
+    count_sets = n())
 
+sets_themes_each_year_df <- sets_themes_each_year_df[!(sets_themes_each_year_df$year %in% c(current_year, current_year + 1, current_year + 2)), ]
+
+forecast_year_1 <- current_year + 2
+forecast_year_2 <- current_year + 4
+forecast_year_3 <- current_year + 7
 ```
 
-## Prognoza 2
+## Prognoza liczby setów
 ```{r}
+count_sets_ts <- ts(sets_themes_each_year_df$count_sets, start = min(sets_themes_each_year_df$year), end = max(sets_themes_each_year_df$year) - 2, frequency = 1)
+arima_count_sets <- auto.arima(count_sets_ts)
 
+forecast_arima_count_sets <- forecast(arima_count_sets)
+
+autoplot(forecast_arima_count_sets) +
+  labs(x = "Year", y = "Number of Sets")
+
+forecast_arima_count_sets_df <- as.data.frame(forecast_arima_count_sets)
+forecast_arima_count_sets_df <- forecast_arima_count_sets_df %>%
+  add_rownames("Year")
+
+forecast_arima_count_sets_1 <- forecast_arima_count_sets_df[forecast_arima_count_sets_df$Year == forecast_year_1, ]
+forecast_arima_count_sets_1 <- format(forecast_arima_count_sets_1$`Point Forecast`, digits = 2, scientific = FALSE)
+
+forecast_arima_count_sets_2 <- forecast_arima_count_sets_df[forecast_arima_count_sets_df$Year == forecast_year_2, ]
+forecast_arima_count_sets_2 <- format(forecast_arima_count_sets_2$`Point Forecast`, digits = 2, scientific = FALSE)
+
+forecast_arima_count_sets_3 <- forecast_arima_count_sets_df[forecast_arima_count_sets_df$Year == forecast_year_3, ]
+forecast_arima_count_sets_3 <- format(forecast_arima_count_sets_3$`Point Forecast`, digits = 2, scientific = FALSE)
 ```
 
-## Prognoza 3
-```{r}
+Według modelu wykorzystującego algorytm arima:
 
+- W roku `r forecast_year_1` będzie `r forecast_arima_count_sets_1` setów
+
+- W roku `r forecast_year_2` będzie `r forecast_arima_count_sets_2` setów
+
+- W roku `r forecast_year_3` będzie `r forecast_arima_count_sets_3` setów
+
+```{r}
+ets_count_sets <- ets(count_sets_ts)
+
+forecast_ets_count_sets <- forecast(ets_count_sets)
+
+autoplot(forecast_ets_count_sets) +
+  labs(x = "Year", y = "Number of Sets")
+
+forecast_ets_count_sets_df <- as.data.frame(forecast_ets_count_sets)
+forecast_ets_count_sets_df <- forecast_ets_count_sets_df %>%
+  add_rownames("Year")
+
+forecast_ets_count_sets_1 <- forecast_ets_count_sets_df[forecast_ets_count_sets_df$Year == forecast_year_1, ]
+forecast_ets_count_sets_1 <- format(forecast_ets_count_sets_1$`Point Forecast`, digits = 2, scientific = FALSE)
+
+forecast_ets_count_sets_2 <- forecast_ets_count_sets_df[forecast_ets_count_sets_df$Year == forecast_year_2, ]
+forecast_ets_count_sets_2 <- format(forecast_ets_count_sets_2$`Point Forecast`, digits = 2, scientific = FALSE)
+
+forecast_ets_count_sets_3 <- forecast_ets_count_sets_df[forecast_ets_count_sets_df$Year == forecast_year_3, ]
+forecast_ets_count_sets_3 <- format(forecast_ets_count_sets_3$`Point Forecast`, digits = 2, scientific = FALSE)
 ```
+
+Według modelu wykorzystującego algorytm ets:
+
+- W roku `r forecast_year_1` będzie `r forecast_ets_count_sets_1` setów
+
+- W roku `r forecast_year_2` będzie `r forecast_ets_count_sets_2` setów
+
+- W roku `r forecast_year_3` będzie `r forecast_ets_count_sets_3` setów
+
+## Prognoza ilości części
+```{r}
+sum_parts_ts <- ts(sets_themes_each_year_df$sum_parts, start = min(sets_themes_each_year_df$year), end = max(sets_themes_each_year_df$year) - 2, frequency = 1)
+arima_sum_parts <- auto.arima(sum_parts_ts)
+
+forecast_arima_sum_parts <- forecast(arima_sum_parts)
+
+autoplot(forecast_arima_sum_parts) +
+  labs(x = "Year", y = "Number of Sets")
+
+forecast_arima_sum_parts_df <- as.data.frame(forecast_arima_sum_parts)
+forecast_arima_sum_parts_df <- forecast_arima_sum_parts_df %>%
+  add_rownames("Year")
+
+forecast_arima_sum_parts_1 <- forecast_arima_sum_parts_df[forecast_arima_sum_parts_df$Year == forecast_year_1, ]
+forecast_arima_sum_parts_1 <- format(forecast_arima_sum_parts_1$`Point Forecast`, digits = 2, scientific = FALSE)
+
+forecast_arima_sum_parts_2 <- forecast_arima_sum_parts_df[forecast_arima_sum_parts_df$Year == forecast_year_2, ]
+forecast_arima_sum_parts_2 <- format(forecast_arima_sum_parts_2$`Point Forecast`, digits = 2, scientific = FALSE)
+
+forecast_arima_sum_parts_3 <- forecast_arima_sum_parts_df[forecast_arima_sum_parts_df$Year == forecast_year_3, ]
+forecast_arima_sum_parts_3 <- format(forecast_arima_sum_parts_3$`Point Forecast`, digits = 2, scientific = FALSE)
+```
+
+Według modelu wykorzystującego algorytm arima:
+
+- W roku `r forecast_year_1` będzie `r forecast_arima_sum_parts_1` części
+
+- W roku `r forecast_year_2` będzie `r forecast_arima_sum_parts_2` części
+
+- W roku `r forecast_year_3` będzie `r forecast_arima_sum_parts_3` części
+
+```{r}
+ets_sum_parts <- ets(sum_parts_ts)
+
+forecast_ets_sum_parts <- forecast(ets_sum_parts)
+
+autoplot(forecast_ets_sum_parts) +
+  labs(x = "Year", y = "Number of Sets")
+
+forecast_ets_sum_parts_df <- as.data.frame(forecast_ets_sum_parts)
+forecast_ets_sum_parts_df <- forecast_ets_sum_parts_df %>%
+  add_rownames("Year")
+
+forecast_ets_sum_parts_1 <- forecast_ets_sum_parts_df[forecast_ets_sum_parts_df$Year == forecast_year_1, ]
+forecast_ets_sum_parts_1 <- format(forecast_ets_sum_parts_1$`Point Forecast`, digits = 2, scientific = FALSE)
+
+forecast_ets_sum_parts_2 <- forecast_ets_sum_parts_df[forecast_ets_sum_parts_df$Year == forecast_year_2, ]
+forecast_ets_sum_parts_2 <- format(forecast_ets_sum_parts_2$`Point Forecast`, digits = 2, scientific = FALSE)
+
+forecast_ets_sum_parts_3 <- forecast_ets_sum_parts_df[forecast_ets_sum_parts_df$Year == forecast_year_3, ]
+forecast_ets_sum_parts_3 <- format(forecast_ets_sum_parts_3$`Point Forecast`, digits = 2, scientific = FALSE)
+```
+
+Według modelu wykorzystującego algorytm ets:
+
+- W roku `r forecast_year_1` będzie `r forecast_ets_sum_parts_1` części
+
+- W roku `r forecast_year_2` będzie `r forecast_ets_sum_parts_2` części
+
+- W roku `r forecast_year_3` będzie `r forecast_ets_sum_parts_3` części
