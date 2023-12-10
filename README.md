@@ -17,3 +17,5 @@ Raport został podzielony na następujące rozdziały:
 - Przewidywanie dalszych cech zestawów Lego - próba przewidzenia co się stanie dalej z cechami zestawów Lego
 
 Dzięki analizy można dostrzeć, że LEGO praktycznie nieustannie rośnie od momentu powstania pierwszego zestawu. Jednym z przyczyn popularności LEGO jest projektowanie zestawów w tematyce popularnych marek takich jak: Star wars, Bionicle, Ninjago. Na początku istnienia LEGO nie wykorzystywano znanych marek, lecz ogólnikowe tematy takie jak: System, Town, Technic, City. Co ciekawe, projektowanie zestawów nie związane z znanymi markami rośnie z roku na rok, co tylko pokazuje fenomen i popularność LEGO. Według wyników z przeprowadzonych prognoz, liczba zestawów oraz części będzie ciągle rosła.
+
+Link do raportu: https://yorlock.github.io/lego_analysis/
